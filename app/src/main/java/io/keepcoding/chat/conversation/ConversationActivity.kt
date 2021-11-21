@@ -4,6 +4,10 @@ import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.View
+import android.widget.ProgressBar
+import android.widget.RelativeLayout
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.keepcoding.chat.Channel
@@ -11,6 +15,7 @@ import io.keepcoding.chat.Message
 import io.keepcoding.chat.Repository
 import io.keepcoding.chat.common.TextChangedWatcher
 import io.keepcoding.chat.databinding.ActivityConversationBinding
+import java.io.IOException
 
 class ConversationActivity : AppCompatActivity() {
 
@@ -26,6 +31,9 @@ class ConversationActivity : AppCompatActivity() {
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		setContentView(binding.root)
+
+		val progressBarContainer = binding.progressBarConversationLayout
+
 		binding.conversation.apply {
 			layoutManager = LinearLayoutManager(context).apply {
 				stackFromEnd = true
@@ -35,21 +43,37 @@ class ConversationActivity : AppCompatActivity() {
 		vm.state.observe(this) {
 			when (it) {
 				is ConversationViewModel.State.MessagesReceived -> {
-					renderMessages(it.messages)
-					hideLoading()
+					showLoading(progressBarContainer)
+					if (it.messages.size > 0 ) {
+						renderMessages(it.messages)
+						binding.noMessegeListLayout.visibility = View.GONE
+					} else{
+						binding.noMessegeListLayout.visibility = View.VISIBLE
+					}
+
+					binding.root.postDelayed({
+						hideLoading(progressBarContainer)
+					},1000)
 				}
 				is ConversationViewModel.State.Error.ErrorLoading -> {
-					hideLoading()
+					Toast.makeText(this, it.toString(), Toast.LENGTH_LONG).show()
+					hideLoading(progressBarContainer)
 				}
 				is ConversationViewModel.State.Error.ErrorWithMessages -> {
+					Toast.makeText(this, it.toString(), Toast.LENGTH_LONG).show()
 					renderMessages(it.messages)
-					hideLoading()
+					hideLoading(progressBarContainer)
 				}
 				is ConversationViewModel.State.LoadingMessages.Loading -> {
-					showLoading()
+					showLoading(progressBarContainer)
 				}
 				is ConversationViewModel.State.LoadingMessages.LoadingWithMessages -> {
-					renderMessages(it.messages)
+					if (it.messages.size > 0 ) {
+						renderMessages(it.messages)
+						binding.noMessegeListLayout.visibility = View.GONE
+					} else{
+						binding.noMessegeListLayout.visibility = View.VISIBLE
+					}
 				}
 			}
 		}
@@ -59,20 +83,37 @@ class ConversationActivity : AppCompatActivity() {
 				setSelection(it.length)
 			}
 		}
-		binding.tvMessage.addTextChangedListener(TextChangedWatcher(vm::onInputMessageUpdated))
-		binding.sendButton.setOnClickListener { vm.sendMessage(channelId) }
+
+		vm.sendButtonEnabled.observe(this){
+			binding.sendButton.isEnabled = it
+			if (it) {
+				binding.sendButton.alpha = 1.0.toFloat()
+			} else {
+				binding.sendButton.alpha = 0.1.toFloat()
+			}
+		}
+
+		binding.tvMessage.addTextChangedListener(
+			TextChangedWatcher(vm::onInputMessageUpdated)
+		)
+		binding.sendButton.setOnClickListener {
+			println("Enviando mensaje")
+			vm.sendMessage(channelId)
+		}
 	}
 
 	private fun renderMessages(messages: List<Message>) {
 		messagesAdapter.submitList(messages) { binding.conversation.smoothScrollToPosition(messages.size) }
 	}
 
-	private fun showLoading() {
-		// TODO: Show loading
+	private fun showLoading(progressBarContainer: RelativeLayout) {
+		println("Mostrando ProgressBar")
+		progressBarContainer.visibility = View.VISIBLE
 	}
 
-	private fun hideLoading() {
-		// TODO: Hide loading
+	private fun hideLoading(progressBarContainer: RelativeLayout) {
+		println("Mostrando ProgressBar")
+		progressBarContainer.visibility = View.GONE
 	}
 
 	override fun onResume() {

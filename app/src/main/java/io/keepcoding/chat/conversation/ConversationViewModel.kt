@@ -41,6 +41,9 @@ class ConversationViewModel(private val repository: Repository) : ViewModel() {
 	private fun onMessagesReceived(messages: List<Message>): State.MessagesReceived =
 		State.MessagesReceived(messages.sortedBy { it.timestamp })
 
+	private fun onNewMessageReceived(messages: List<Message>): State.LoadingMessages =
+		State.LoadingMessages.LoadingWithMessages(messages.sortedBy { it.timestamp })
+
 	private fun onError(throwable: Throwable): State =
 		when (val currentState = _state.value) {
 			is State.LoadingMessages.LoadingWithMessages -> State.Error.ErrorWithMessages(
@@ -65,13 +68,14 @@ class ConversationViewModel(private val repository: Repository) : ViewModel() {
 			_message.postValue("")
 		}
 		sentMessage.onFailure {
-			// TODO: Check if message was sent properly
+			println(it)
+			onError(it)
 		}
 	}
 
 	private fun onNewMessage(message: Message) {
 		_state.postValue(
-			onMessagesReceived(
+			onNewMessageReceived(
 				when (val currentState = _state.value) {
 					is State.Error.ErrorWithMessages -> currentState.messages
 					is State.LoadingMessages.LoadingWithMessages -> currentState.messages

@@ -7,7 +7,7 @@ import kotlin.random.Random
 
 object Repository {
 
-	private val currentSender: User = DummyData.randomUser()
+	val currentSender: User = DummyData.randomUser()
 
 	private val random: Random = Random(System.currentTimeMillis())
 	private var channels: List<Channel> = DummyData.channels

@@ -7,6 +7,8 @@ import androidx.recyclerview.widget.RecyclerView
 import io.keepcoding.chat.Channel
 import io.keepcoding.chat.databinding.ViewChannelBinding
 import io.keepcoding.chat.extensions.inflater
+import java.text.SimpleDateFormat
+import java.util.*
 
 class ChannelsAdapter(
 	private val onChannelClick: (Channel) -> Unit,
@@ -38,7 +40,12 @@ class ChannelsAdapter(
 	) : RecyclerView.ViewHolder(binding.root) {
 
 		fun bind(channel: Channel) {
+			val date = Date(channel.lastMessageTimestamp)
+			val format = SimpleDateFormat("yyyy/MM/dd HH:mm")
+
 			binding.channelName.text = channel.name
+			binding.channelDate.text = format.format(date)
+			binding.channelImage.setImageResource(channel.channelImageRes)
 			binding.root.setOnClickListener { onChannelClick(channel) }
 		}
 	}
